@@ -62,7 +62,7 @@ const storeItem = () => {
                                             </div>
                                             <div class="w-full p-2">
                                                 <button
-                                                    class="flex px-8 py-2 mx-auto text-lg text-white bg-indigo-500 border-0 rounded focus:outline-none hover:bg-indigo-600">Button</button>
+                                                    class="flex px-8 py-2 mx-auto text-lg text-white bg-indigo-500 border-0 rounded focus:outline-none hover:bg-indigo-600">商品登録</button>
                                             </div>
                                         </div>
                                     </div>

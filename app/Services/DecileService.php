@@ -1,49 +1,15 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Services;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 
-class AnalysisController extends Controller
+class DecileService
 {
-    public function index()
+    public static function decile($subQuery)
     {
-
-
-        // $period = Order::betweenDate($startDate, $endDate)
-        //     ->groupBy('id')
-        //     ->selectRaw('id, sum(subtotal) as total, customer_name, status, created_at')
-        //     ->orderBy('created_at')
-        //     ->paginate(50);
-
-        // dd($period);
-
-        // $subQuery = Order::betweenDate($startDate, $endDate)
-        //     ->where('status', true)
-        //     ->groupBy('id')
-        //     ->selectRaw('id, sum(subtotal) as totalPerPurchase,
-        // DATE_FORMAT(created_at, "%Y%m%d") as date');
-
-        // $data = DB::table($subQuery)
-        // ->groupBy('date')
-        // ->selectRaw('date, sum(totalPerPurchase) as total')
-        // ->get();
-
-        // dd($data);
-
-        return Inertia::render('AnalysisUcrm');
-    }
-
-    public function decile()
-    {
-        $startDate = '2022-07-01';
-        $endDate = '2023-09-31';
-
         // 1. 購買ID毎にまとめる
-        $subQuery = Order::betweenDate($startDate, $endDate)
+        $subQuery = $subQuery
             ->groupBy('id')
             ->selectRaw('id, customer_id, customer_name, SUM(subtotal) as
     totalPerPurchase');
@@ -55,8 +21,6 @@ class AnalysisController extends Controller
     as total')
             ->orderBy('total', 'desc');
 
-        // dd($subQuery->get());
-
         // statementで変数を設定できる
         // set @変数名 = 値 (mysqlの書き方)
         // 3. 購入順に連番を振る
@@ -67,8 +31,6 @@ class AnalysisController extends Controller
     customer_id,
     customer_name,
     total');
-
-        // dd($subQuery->get());
 
         // 4. 全体の件数を数え、1/10の値や合計金額を取得
         $count = DB::table($subQuery)->count();
@@ -82,8 +44,6 @@ class AnalysisController extends Controller
             $tempValue += $decile;
             array_push($bindValues, 1 + $tempValue);
         }
-
-        // dd($subQuery->get(),$count,$total,$decile,$bindValues,$tempValue);
 
         // 5 10分割しグループ毎に数字を振る
         DB::statement('set @row_num = 0;');
@@ -107,8 +67,6 @@ class AnalysisController extends Controller
      end as decile
      ", $bindValues); // SelectRaw第二引数にバインドしたい数値(配列)をいれる
 
-        // dd($subQuery->get());
-
         // round, avg はmysqlの関数
         // 6. グループ毎の合計・平均
         $subQuery = DB::table($subQuery)
@@ -116,8 +74,6 @@ class AnalysisController extends Controller
             ->selectRaw('decile,
      round(avg(total)) as average,
     sum(total) as totalPerGroup');
-
-        // dd($subQuery->get());
 
         // 7 構成比
         DB::statement("set @total = ${total} ;");
@@ -130,8 +86,9 @@ class AnalysisController extends Controller
     ')
             ->get();
 
-        // dd($data);
+        $labels = $data->pluck('decile');
+        $totals = $data->pluck('totalPerGroup');
 
-        return Inertia::render('AnalysisUcrm');
+        return [$data, $labels, $totals];
     }
 }
